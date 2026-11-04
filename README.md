@@ -19,15 +19,13 @@
 
 要求：Node.js 22.18+、DSH Web **0.2.1-rc.5**、至少一个已配置的模型供应商。本版本仅对这一个 DSH 版本声明兼容；Agent Team 接口仍处于实验阶段。
 
-```sh
-dsh plugin --profile web add dsh-agent-roles
-```
-
-也可以安装 GitHub Release 的预构建包：
+当前通过 GitHub Release 安装：
 
 ```sh
 dsh plugin --profile web add https://github.com/Delthin/dsh-agent-roles/releases/download/v0.3.0/dsh-agent-roles-0.3.0.tgz
 ```
+
+npm 发布仍在等待账号验证。发布完成后，也可执行 `dsh plugin --profile web add dsh-agent-roles`；当前请使用上面的 Release 地址。
 
 刷新对应 Web 页面，在左侧打开「多智能体」。如果当前宿主没有自动重载插件，重启同一个 Web profile。安装过程无需编译，也不运行安装脚本。
 

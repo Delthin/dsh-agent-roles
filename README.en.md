@@ -18,15 +18,13 @@ A fresh installation starts with **no roles**. It does not ship the author’s p
 
 Requires Node.js 22.18+, DSH Web **0.2.1-rc.5**, and a configured model provider. This release declares compatibility with that exact DSH version; Agent Team APIs are experimental.
 
-```sh
-dsh plugin --profile web add dsh-agent-roles
-```
-
-Alternatively, install the prebuilt release archive:
+Install the currently available GitHub Release archive:
 
 ```sh
 dsh plugin --profile web add https://github.com/Delthin/dsh-agent-roles/releases/download/v0.3.0/dsh-agent-roles-0.3.0.tgz
 ```
+
+npm publication is pending account authentication. After publication, `dsh plugin --profile web add dsh-agent-roles` will also be available; use the Release URL for now.
 
 Refresh the existing Web page, or restart the same Web profile if the host did not reload the plugin. No build or install script is required. The bundle enables the native Agent Team service, tools and UI and disables the four legacy subagent tool entries, as the official experimental team profile does. Check overlapping IDs if you already use a custom team bundle.
 
