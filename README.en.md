@@ -2,6 +2,8 @@
 
 [中文](README.md) · [Changelog](CHANGELOG.md) · [Releasing Guide](docs/RELEASING.md)
 
+> **Repository Migration Notice**: Ongoing source development and maintenance of this project have moved to the scoped package `@delthin/dsh-agent-roles` in the `Delthin/dsh-plugins` monorepo (see [`Delthin/dsh-plugins/packages/agent-roles`](https://github.com/Delthin/dsh-plugins/tree/main/packages/agent-roles)). This legacy repository is retained for historical commits and prior releases, while all future updates take place in the unified repository. Current source code is licensed under the `Apache-2.0` open-source license ([LICENSE](./LICENSE)); prior `MIT` grants for historical versions `<= 0.4.0` are not revoked (retained in [LICENSE-MIT-legacy](./LICENSE-MIT-legacy)).
+
 Role management UI for **DeepSeek Harness Web 0.2.1-rc.5+**, built on the native DSH Agent Team APIs to spawn role-based members, delegate tasks, and continue follow-up conversations.
 
 In this plugin, a **Role** is a reusable configuration template that stores a responsibility prompt, model and reasoning effort, tool allowlist, and selected Skills; a **Member** is a concrete runtime instance spawned by the main agent from a role. During a session, the main agent can inspect the responsibilities, models, and selected Skills of all enabled roles, and decides when to call `spawn_role` based on the task at hand without requiring a predefined fixed workflow.
@@ -116,4 +118,4 @@ See the [Releasing Guide](docs/RELEASING.md) for pre-release checks, privacy che
 
 ## License
 
-[MIT](LICENSE), Copyright © 2026 Delthin.
+[Apache-2.0](LICENSE), Copyright © 2026 Delthin.

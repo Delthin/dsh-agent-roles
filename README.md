@@ -2,6 +2,8 @@
 
 [English](README.en.md) · [发布记录](CHANGELOG.md) · [发布指南](docs/RELEASING.md)
 
+> **仓库迁移说明**：本项目的后续源码开发与维护已统一迁入 `Delthin/dsh-plugins` monorepo 下的作用域包 `@delthin/dsh-agent-roles`（参见 [`Delthin/dsh-plugins/packages/agent-roles`](https://github.com/Delthin/dsh-plugins/tree/main/packages/agent-roles)）。本旧仓库保留用于查阅历史提交与早期版本记录，后续更新与维护均以统一仓库为准。当前源码采用 `Apache-2.0` 开源许可证（[LICENSE](./LICENSE)），历史版本 `<= 0.4.0` 已授予的 `MIT` 许可不撤回（保留于 [LICENSE-MIT-legacy](./LICENSE-MIT-legacy)）。
+
 为 **DeepSeek Harness Web 0.2.1-rc.5+** 提供角色管理界面，并基于 DSH 原生 Agent Team 接口创建角色成员、分发任务和继续对话。
 
 在本插件中，**角色（Role）**是可复用的配置模板，用于保存职责提示词、模型与思考强度、工具白名单及 Skills；**成员（Member）**是由主代理按角色启动的具体运行实例。主代理在会话中能够看到所有已启用角色的职责、模型和已选 Skills，并根据当前任务判断何时调用 `spawn_role` 创建成员，无需预设固定工作流。
@@ -116,4 +118,4 @@ npm run release:check
 
 ## 许可证
 
-[MIT](LICENSE)，Copyright © 2026 Delthin。
+[Apache-2.0](LICENSE)，Copyright © 2026 Delthin。
