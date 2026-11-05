@@ -18,34 +18,39 @@ function panel(draft=role,fastProviders=['test']) {
 function nodes(tree) {return !tree||typeof tree!=='object'?[]:[tree,...tree.children.flatMap(nodes)];}
 function text(tree) {return !tree||typeof tree==='boolean'?'':typeof tree!=='object'?String(tree):tree.children.map(text).join(' ');}
 
-test('现有模型配置使用 Fast Switch，缺省关闭并保存布尔值；新增角色也是关闭',async()=>{
+const tier=(tree,name)=>nodes(tree).find(n=>n.type==='button'&&n.children.includes(name));
+test('模型选择器内显示标准 / Fast，切档保持模型并保存布尔值；新增角色默认标准',async()=>{
   const app=panel();
-  let tree=app.render(),toggle=nodes(tree).find(n=>n.type===app.primitives.Switch&&n.props.label==='Fast');
-  assert.ok(toggle);assert.equal(toggle.props.checked,false);assert.equal(toggle.props.disabled,false);
-  assert.match(text(tree),/新成员启动时固定/);
-  toggle.props.onChange(true);
-  tree=app.render();toggle=nodes(tree).find(n=>n.type===app.primitives.Switch&&n.props.label==='Fast');
-  assert.equal(toggle.props.checked,true);
+  let tree=app.render(),toggle=tier(tree,'Fast');
+  const control=nodes(tree).find(n=>n.props.className==='ar-model-control');
+  assert.ok(nodes(control).some(n=>n.type==='select'&&n.props.id==='ar-role-model'));
+  assert.ok(nodes(control).includes(toggle));
+  assert.equal(toggle.props['aria-pressed'],false);assert.equal(toggle.props.disabled,false);
+  assert.equal(tier(tree,'标准').props['aria-pressed'],true);
+  assert.match(text(tree),/新成员启动时固定/);assert.match(text(tree),/Fast：请求优先处理/);
+  toggle.props.onClick();
+  tree=app.render();assert.equal(tier(tree,'Fast').props['aria-pressed'],true);
+  assert.equal(app.state[3].model,role.model);assert.equal(app.state[3].provider,role.provider);
   nodes(tree).find(n=>n.type==='form').props.onSubmit({preventDefault(){}});
   await new Promise(resolve=>setImmediate(resolve));
   assert.equal(app.request.action,'save');assert.equal(app.request.role.fast,true);
+  tree=app.render();tier(tree,'标准').props.onClick();assert.equal(app.state[3].fast,false);
   tree=app.render();
   nodes(tree).find(n=>n.type===app.primitives.Button&&n.children.includes('新增角色')).props.onClick();
   assert.equal(app.state[3].fast,false);
 });
 
-test('不支持供应商禁止开启 Fast，但已有 Fast 可关闭；支持清单完全来自模型目录',()=>{
+test('不支持供应商禁止开启 Fast，但标准按钮始终可恢复；支持清单来自模型目录',()=>{
   const unsupported=panel(role,['cpa']);
-  let tree=unsupported.render(),toggle=nodes(tree).find(n=>n.type===unsupported.primitives.Switch&&n.props.label==='Fast');
+  let tree=unsupported.render(),toggle=tier(tree,'Fast');
   assert.equal(toggle.props.disabled,true);assert.match(text(tree),/当前供应商不支持 Fast/);
-  toggle.props.onChange(true);assert.equal(unsupported.state[3].fast,undefined);
+  toggle.props.onClick();assert.equal(unsupported.state[3].fast,undefined);
   const existing=panel({...role,fast:true},['cpa']);
-  tree=existing.render();toggle=nodes(tree).find(n=>n.type===existing.primitives.Switch&&n.props.label==='Fast');
-  assert.equal(toggle.props.disabled,false);toggle.props.onChange(false);
-  tree=existing.render();toggle=nodes(tree).find(n=>n.type===existing.primitives.Switch&&n.props.label==='Fast');
-  assert.equal(toggle.props.checked,false);assert.equal(toggle.props.disabled,true);
+  tree=existing.render();assert.equal(tier(tree,'Fast').props['aria-pressed'],true);
+  const standard=tier(tree,'标准');assert.equal(standard.props.disabled,false);standard.props.onClick();
+  tree=existing.render();assert.equal(tier(tree,'标准').props['aria-pressed'],true);assert.equal(tier(tree,'Fast').props.disabled,true);
   const loading=panel(role,[]);
-  assert.equal(nodes(loading.render()).find(n=>n.type===loading.primitives.Switch&&n.props.label==='Fast'),undefined);
+  assert.equal(tier(loading.render(),'Fast').props.disabled,true);
 });
 
 test('运行列表显示选择快照 Fast 或标准，而不读取当前角色 Fast',()=>{

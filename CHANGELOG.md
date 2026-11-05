@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.0 — 2026-11-05
+
+- Add configurable model delegation rules with a native settings UI, conflict-safe profile persistence, and enforcement for new and existing members. Fresh installations remain unrestricted.
+- Use minimum supported versions instead of exact host and DSH dependency pins.
+- Support the DSH 0.2.2-rc.1 native model selection and tool executor APIs while retaining the 0.2.1-rc.5 integration.
+- Place Standard / Fast controls beside the role model selector and preserve immutable member launch tiers. Priority transport still requires an external adapter.
+- Expand runtime and delegation regression coverage and update Chinese/English usage and release documentation.
+
+Compatibility: DSH Web >=0.2.1-rc.5; verified with 0.2.2-rc.1.
+
 ## 0.3.0 — 2026-11-04
 
 First public release.

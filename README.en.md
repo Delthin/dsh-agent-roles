@@ -1,52 +1,68 @@
 # DSH Agent Roles
 
-[中文](README.md) · [Changelog](CHANGELOG.md) · [Release guide](docs/RELEASING.md)
+[中文](README.md) · [Changelog](CHANGELOG.md) · [Releasing Guide](docs/RELEASING.md)
 
-Role management for **DeepSeek Harness Web 0.2.1-rc.5**, built on native Agent Teams.
+Role management UI for **DeepSeek Harness Web 0.2.1-rc.5+**, built on the native DSH Agent Team APIs to spawn role-based members, delegate tasks, and continue follow-up conversations.
 
-## Features
+In this plugin, a **Role** is a reusable configuration template that stores a responsibility prompt, model and reasoning effort, tool allowlist, and selected Skills; a **Member** is a concrete runtime instance spawned by the main agent from a role. During a session, the main agent can inspect the responsibilities, models, and selected Skills of all enabled roles, and decides when to call `spawn_role` based on the task at hand without requiring a predefined fixed workflow.
 
-- A sidebar panel for creating, editing, enabling and deleting roles.
-- Per-role selection from configured DSH models, reasoning effort, literal role prompts and tool allowlists.
-- Searchable Skills selection, empty by default. Selected skill bodies are loaded when a new member starts; they do not grant additional tools.
-- Native background members, result delivery, session navigation and follow-up messages.
-- Immutable launch snapshots and request-level evidence for the selected model, tools, role prompt and skills.
+## Installation
 
-A fresh installation starts with **no roles**. It does not ship the author’s prompts, provider configuration or conversation records. Existing local role data is preserved on upgrade.
+Requirements: Node.js 22.18+, DSH Web **0.2.1-rc.5 or later**, and at least one configured model provider. The host and DSH dependencies use minimum-version ranges rather than exact pins; the Agent Team APIs remain experimental.
 
-## Install
-
-Requires Node.js 22.18+, DSH Web **0.2.1-rc.5**, and a configured model provider. This release declares compatibility with that exact DSH version; Agent Team APIs are experimental.
-
-Install the currently available GitHub Release archive:
+Install `v0.4.0` from the GitHub Release tarball:
 
 ```sh
-dsh plugin --profile web add https://github.com/Delthin/dsh-agent-roles/releases/download/v0.3.0/dsh-agent-roles-0.3.0.tgz
+dsh plugin --profile web add https://github.com/Delthin/dsh-agent-roles/releases/download/v0.4.0/dsh-agent-roles-0.4.0.tgz
 ```
 
-npm publication is pending account authentication. After publication, `dsh plugin --profile web add dsh-agent-roles` will also be available; use the Release URL for now.
+If the corresponding npm version is available, you can also run `dsh plugin --profile web add dsh-agent-roles@0.4.0`. Check availability with `npm view dsh-agent-roles@0.4.0 version`; otherwise use the GitHub Release URL above. Marketplace listing is independent of both installation methods.
 
-Refresh the existing Web page, or restart the same Web profile if the host did not reload the plugin. No build or install script is required. The bundle enables the native Agent Team service, tools and UI and disables the four legacy subagent tool entries, as the official experimental team profile does. Check overlapping IDs if you already use a custom team bundle.
+Installation requires no build step and runs no install scripts. After installing, refresh the DSH Web page to find「多智能体」in the left navigation bar; if the host does not reload plugins automatically, restart the corresponding Web profile.
 
-## Use
+A fresh installation starts with an **empty role catalog** and includes none of the author's roles, prompts, model configurations, or run records; upgrading an existing installation preserves your local data. The plugin bundle enables the native DSH team service, team tools, and UI, while disabling the legacy `tool-subagent`, `tool-subagent-fork`, `tool-subagent-control`, and `tool-subagent-list-agents` entries—matching the official experimental team profile switch. If you already use a custom team bundle, check for configuration overrides sharing the same IDs.
 
-Open **多智能体 → 角色 → 新增角色** in the sidebar. Set the role name and description, select a model and reasoning effort, write the role prompt, select necessary tools and optional skills, then enable and save it. New roles are disabled and have no tools or skills selected by default.
+## Configuring Roles and Delegating Tasks
 
-The lead sees enabled roles and delegates through `spawn_role({role, name, prompt})`. Members use independent native sessions without the lead’s history, so the assigned prompt must include required material and task boundaries. They cannot recursively delegate with the role allowlist.
+### 1. Create a Role
 
-The native team entry at the top of a conversation opens its members. The plugin’s **子智能体** tab aggregates role-member records for its data directory. Expand a row for output and request evidence, or open the native session. Native `list_agents`, `send_message`, `interrupt_agent`, and `wait_agent` continue to handle collaboration. `inactive` describes scheduling state, not task success.
+1. Open「多智能体 → 角色 → 新增角色」in the left sidebar.
+2. Fill in the display name, dispatch name (lowercase letters, digits, and hyphens, e.g., `reviewer`), and responsibility description. The main agent uses this description to decide when to invoke the role.
+3. Select the model provider, specific model, and reasoning effort for the role.
+4. Define the role's responsibilities, working boundaries, and deliverable expectations under「提示词」, and check only the necessary tool allowlist under「工具」.
+5. Search and select from DSH-discovered Skills under「技能」as needed (empty by default; the global skills catalog is not inherited automatically).
+6. Enable the role and save.
 
-### Skills
+### 2. Task Delegation and Coordination
 
-Roles default to `skills: []`. Selected model-invocable skills are resolved using the DSH registry and the member’s working directory, rendered with DSH’s native `<skill_content>` wrapper, and loaded in the system prompt. Their original bodies and resource bases are preserved in the launch snapshot. Even tool-free roles can receive selected skills. No global skill catalog is automatically inherited.
+Once a role is enabled, simply describe your task to the main agent in the main session. For example, after configuring a read-only `reviewer` role, you can ask the main agent:
 
-Skill instructions do not expand tool permissions or install dependencies. Missing skills fail new launches explicitly. Editing a role or a skill file does not change existing members’ snapshots.
+> Ask reviewer to review these changes and report evidence-backed issues. Summarize the findings and decide how to address them.
 
-## Configuration
+Runtime and coordination rules:
 
-Data defaults to `$DSH_HOME/agent-roles`, or `~/.dsh/agent-roles` if `DSH_HOME` is unset. `roles.json` stores the catalog; `runs.json` stores launch snapshots, skill bodies, request evidence and the latest output summary (up to 30,000 characters). DSH owns the full session history.
+- **On-Demand Instance Creation**: The main agent calls `spawn_role({role, name, prompt})` to start a member, which invokes the native `agentTeams.spawnTeammate` under the hood. At startup, the member captures a snapshot of the role's prompt, model settings, and selected Skills content; editing or deleting the role later does not affect existing members.
+- **Isolated Sessions and Follow-Ups**: Each new member starts in an independent fresh session without inheriting the main agent's conversation history, so the main agent must include necessary context and materials in the initial `prompt`. For follow-up questions or additional input, the main agent continues communicating with the same member instance via the native `send_message` tool.
+- **Centralized Coordination**: A member's tool allowlist never includes recursive delegation tools, and members cannot proactively message one another. The main agent handles all task decomposition, result synthesis, and cross-member coordination using `list_agents`, `send_message`, `interrupt_agent`, and `wait_agent`. Note that `list_agents` queries already-spawned member instances rather than the role catalog.
+- **Inspecting Status and Results**: Open the native member session from the subagent/team entry at the top of the main session, or open「多智能体 → 子智能体」to view recent role member records for the current data directory, expand output summaries, or click「会话」to jump to the session. An `inactive` status only indicates that no turn is currently executing—it does not by itself mean the task succeeded. Check the member's output to verify conclusions or errors.
+- **Request Verification**: Under a member record's「请求详情」, the plugin logs the actual model, reasoning effort, and tool list from the outgoing request, and verifies that the base DSH system prompt, verbatim role prompt, and selected Skills content were loaded (in `0.2.1-rc.5`, the model field in the native member list may retain the parent session's description; rely on「请求详情」for the actual routing).
 
-An optional profile override:
+### 3. Skills Loading and Communication Overhead
+
+New and existing roles default to `skills: []`. When Skills are checked, the plugin reads them via the native DSH skills service at member startup and injects the full content into the new member's system prompt using the native `<skill_content>` format (preserving the resource base directory and literal body). Even a zero-tool role can receive instructions from selected Skills.
+
+Skills provide text instructions only and do not grant tool permissions. External commands, software, or dependencies required by a Skill must still be configured in the host environment and tool allowlist. If a selected Skill is unavailable at startup, member creation fails immediately and reports the missing Skill name; restore the Skill or uncheck it to retry.
+
+Delegating tasks, processing returned results, and sending follow-ups incur additional model input/output usage across the main agent and members as they handle their respective turns, and the full text of all selected Skills is included in the member session's input. Select only the Skills a role genuinely needs, and let the main agent handle simple, straightforward tasks directly rather than splitting them across multiple agents.
+
+## Data Storage and Configuration
+
+The default data directory is `$DSH_HOME/agent-roles` (or `~/.dsh/agent-roles` when `DSH_HOME` is unset):
+
+- `roles.json`: Stores the role catalog, schema version, and catalog revision.
+- `runs.json`: Stores member startup snapshots, selected Skills bodies, request verification results, and up to 30,000 characters of recent output summary. Full conversation histories remain stored by the native DSH session store.
+
+To customize the data directory or enable optional provider Fast toggles, configure `cordis.patch.yml` in your active profile:
 
 ```yaml
 - id: agent-roles
@@ -55,28 +71,48 @@ An optional profile override:
     fastProviders: []
 ```
 
-Use separate directories for separate DSH processes: persistence uses atomic writes and in-process revision checks, not cross-process locking. Member records are not automatically expired; the API returns the latest 200. Deleting a role or uninstalling the plugin does not delete session history or local data.
+`dataDir` accepts absolute paths, `~`, and paths relative to the current process working directory (an absolute path is recommended). The file store does not provide cross-process write locking; separate DSH processes must use different `dataDir` locations.
 
-The team defaults to 32 lifetime members and 256 shared tasks. Native DSH subagent concurrency and depth settings still apply; delegation depth 0 prevents launches. The plugin does not raise global limits or permissions.
+The public package defaults to `fastProviders: []`; the Fast button beside the model selector remains disabled. This plugin only records the Fast/standard selection in role and member snapshots and does not bundle provider-specific priority transport implementations. Add a provider ID to `fastProviders` only if you have an adapter installed that reads the role startup snapshot. Enabling priority transport may change provider billing rates.
 
-**Optional Fast integration:** `fastProviders` defaults to an empty list and the control is hidden. This package only stores the selected tier; it does not include a provider-specific priority transport. Configure a provider only when a separate compatible adapter consumes the role launch snapshot. Priority requests may have different billing.
+### Restricting Delegated Models
 
-## Security and verification
+In **Multi-agent → Settings**, add a rule, choose the lead model, select blocked member models, and save to apply it. Options come from configured DSH models. The default is no rules and unrestricted delegation. Changes use the native DSH configuration service with conflict detection.
 
-The plugin installs role configuration through the awaited native `agent/created` hook before the first request. It retains the DSH system prompt and does not implement a separate model loop. Request evidence checks the actual model, reasoning effort, tool names, role body and selected skill bodies. The rc.5 native roster may still display the parent model; use request evidence for the actual route.
+You may also set the generic `delegationRules` option directly using your own model IDs:
 
-The role API uses DSH Web authentication. Tool allowlists constrain model calls but are not directory sandboxes; DSH permissions and filesystem policy remain authoritative. Role and skill bodies are trusted local content. A plugin itself runs with host-process permissions. Protect snapshots and backups as private data and do not share the same authenticated Web session with untrusted users.
+```yaml
+- id: agent-roles
+  config:
+    delegationRules:
+      - leaderModel: lead-model-id
+        denyModels:
+          - blocked-member-model-id
+```
 
-## Development
+Model IDs are matched exactly across providers. Rules use the lead’s current request model and follow model switches on the next turn. Blocked roles are omitted from its directory and rejected before launch. Restricted leads must use `spawn_role`; generic delegation tools are blocked, as are messages to existing blocked-model members. Already-running members are not automatically interrupted.
+
+## Runtime Limits and Security Boundaries
+
+- **Native Quotas and Delegation Depth**: A team supports up to 32 created members and 256 shared tasks. Concurrency and delegation depth remain governed by native DSH subagent settings; if the host delegation depth is set to `0`, delegation must first be enabled in the host configuration. This plugin does not elevate global quotas or system permissions.
+- **Hook Mechanism and API Authentication**: Using the native `agent/created` hook, the plugin installs model routing, system prompt injection, and tool allowlist guards before a member's first request is sent, without running a custom model loop. The role management API relies on the DSH Web connection service for authentication and rejects unauthenticated requests.
+- **Permissions and Trust Boundaries**: A role's tool allowlist constrains which tools the model may call; it is not an OS-level file or directory sandbox. File access and command execution remain governed by DSH global permissions and file policies. Configured role prompts and Skills are trusted local text instructions provided to the model, while the installed plugin itself executes with host process privileges. Do not expose an authenticated DSH Web session to untrusted users.
+- **Data Lifecycle**: Member snapshots in `runs.json` contain prompts, full Skill texts, and output summaries—protect backups as private data. Uninstalling the plugin does not remove the data directory, and deleting a role does not delete existing member run records. Run records do not expire automatically; the list API returns up to the 200 most recent entries for the data directory.
+
+## Development and Verification
 
 ```sh
+git clone https://github.com/Delthin/dsh-agent-roles.git
+cd dsh-agent-roles
 npm ci --ignore-scripts
 npm run check
 npm test
 npm run release:check
 ```
 
-The source JavaScript is shipped directly. The client uses host-provided React and UI primitives. Tests use synthetic roles and do not call paid model APIs. See [the release guide](docs/RELEASING.md) for package checks and marketplace submission. Report sanitized errors, not tokens, private roles or full conversations.
+Both server and client ship plain JavaScript directly without a build step. The client UI uses the React runtime and native UI controls bundled with DSH Web. The test suite uses fictional roles and mock models and makes no calls to paid model APIs.
+
+See the [Releasing Guide](docs/RELEASING.md) for pre-release checks, privacy checks, npm/GitHub Release workflows, and marketplace listing steps. When reporting issues, include your DSH version, plugin version, and sanitized error logs; never upload private role data, access tokens, or full session transcripts.
 
 ## License
 

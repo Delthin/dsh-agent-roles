@@ -17,5 +17,8 @@ const source=await readFile('index.js','utf8');
 assert.match(source,/store\.load\(\[\]\)/,'Fresh installs must have an empty catalog');
 assert.doesNotMatch(source,/seed-roles/,'Private seeds must not be loaded');
 assert.equal(pkg.license,'MIT');
-assert.equal(pkg.engines.dsh,'0.2.1-rc.5');
+assert.equal(pkg.engines.dsh,'>=0.2.1-rc.5');
+for(const [name,range] of Object.entries({...pkg.dependencies,...pkg.peerDependencies})){
+  if(name.startsWith('@deepseek-ai/dsh-'))assert.equal(range,name==='@deepseek-ai/dsh-tool-executor-native'?'>=0.2.2-rc.1':'>=0.2.1-rc.5','DSH dependency must not pin the host: '+name);
+}
 console.log(JSON.stringify({name:result.name,version:result.version,files:expected,size:result.size,unpackedSize:result.unpackedSize},null,2));

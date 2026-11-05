@@ -24,8 +24,8 @@ async function catalog(dir,roles=[role]) {
   await writeFile(join(dir,'roles.json'),JSON.stringify({version:1,revision:1,roles}));
 }
 function agent(id) {
-  const listeners=new Map();
-  return {id,listeners,ctx:{tools:{presentAs:()=>noop,guard:()=>noop,get:()=>undefined,restrict:()=>noop},systemPrompt:{section:()=>noop},on(name,fn){const list=listeners.get(name)??[];list.push(fn);listeners.set(name,list);return noop;}}};
+  const listeners=new Map();let selection;
+  return {id,listeners,model:{current:()=>selection&&structuredClone(selection),select:value=>{selection=structuredClone(value);}},ctx:{tools:{presentAs:()=>noop,guard:()=>noop,get:()=>undefined,restrict:()=>noop},systemPrompt:{section:()=>noop},on(name,fn){const list=listeners.get(name)??[];list.push(fn);listeners.set(name,list);return noop;}}};
 }
 async function boot(dir,agents=[],config={fastProviders:['test']}) {
   const providers=new Map(),events=new Map();
@@ -142,11 +142,8 @@ test('新成员在准备时持久化 Fast，后续编辑、删除、重载保持
   assert.deepEqual(await restored.tier('standard'),{locked:true,fast:false});
   assert.equal(await restored.tier('parent'),null);
   assert.equal((await restored.api('sessionTier',{sessionId:'fast'})).status,400);
-  // Exercise the real model-selection listeners without issuing a model request.
-  const assembly=member.listeners.get('system-prompt/assemble').at(-1);
-  await assembly({}, {},async()=>({variables:{provider:'parent',model:'parent-model'}}));
-  const request=member.listeners.get('agent/request')[0];
-  assert.deepEqual(await request({},async()=>({provider:'parent',model:'parent-model',reasoningEffort:'low',temperature:0})),{provider:'test',model:'same-model',reasoningEffort:'high',temperature:0});
+  // The current native API records the complete role route before the first step.
+  assert.deepEqual(member.model.current(),{provider:'test',model:'same-model',reasoningEffort:'high'});
   disk=JSON.parse(await readFile(join(dir,'runs.json'),'utf8'));
   assert.equal(disk.items.find(r=>r.sessionId==='fast').selection.fast,true);
 }));
